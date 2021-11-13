@@ -30,9 +30,8 @@ module "aws" {
 }
 
 resource "aws_instance" "this" {
-  ami                    = "ami-06cd52961ce9f0d85"
+  ami                    = "ami-036d0684fc96830ca"
   instance_type          = local.instance_type
-  user_data              = file("init-script.sh")
   vpc_security_group_ids = [aws_security_group.this-sg.id]
   tags = {
     Name = "${local.name}-${random_pet.name.id}"
