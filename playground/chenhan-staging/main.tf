@@ -17,6 +17,10 @@ locals {
   instance_type  = "t3a.nano"
 }
 
+locals {
+  name = "chenhan-staging"
+}
+
 provider "random" {}
 
 resource "random_pet" "name" {}
@@ -31,13 +35,13 @@ resource "aws_instance" "this" {
   user_data              = file("init-script.sh")
   vpc_security_group_ids = [aws_security_group.this-sg.id]
   tags = {
-    Name = random_pet.name.id
+    Name = "${local.name}-${random_pet.name.id}"
   }
   key_name      = module.aws.key_pair.default.name
 }
 
 resource "aws_security_group" "this-sg" {
-  name = "${random_pet.name.id}-sg"
+  name = "${local.name}-${random_pet.name.id}-sg"
   ingress {
     from_port   = 80
     to_port     = 80
