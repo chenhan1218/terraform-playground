@@ -26,18 +26,31 @@ provider "random" {}
 resource "random_pet" "name" {}
 
 module "aws" {
-  source="../modules/aws"
+  source = "../modules/aws"
 }
 
-resource "aws_instance" "this" {
+resource "aws_spot_instance_request" "cheap_worker" {
   ami                    = "ami-036d0684fc96830ca"
   instance_type          = local.instance_type
   vpc_security_group_ids = [aws_security_group.this-sg.id]
+  # spot_type = "one-time"
+  associate_public_ip_address = true
+
   tags = {
-    Name = "${local.name}-${random_pet.name.id}"
+    Name = "CheapWorker"
   }
-  key_name      = module.aws.key_pair.default.name
+  key_name = module.aws.key_pair.default.name
 }
+
+# resource "aws_instance" "this" {
+#   ami                    = "ami-036d0684fc96830ca"
+#   instance_type          = local.instance_type
+#   vpc_security_group_ids = [aws_security_group.this-sg.id]
+#   tags = {
+#     Name = "${local.name}-${random_pet.name.id}"
+#   }
+#   key_name = module.aws.key_pair.default.name
+# }
 
 resource "aws_security_group" "this-sg" {
   name = "${local.name}-${random_pet.name.id}-sg"
