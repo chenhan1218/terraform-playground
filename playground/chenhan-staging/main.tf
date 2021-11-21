@@ -30,10 +30,10 @@ module "aws" {
 }
 
 resource "aws_spot_instance_request" "cheap_worker" {
-  ami                    = "ami-036d0684fc96830ca"
-  instance_type          = local.instance_type
-  vpc_security_group_ids = [aws_security_group.this-sg.id]
-  # spot_type = "one-time"
+  ami                         = "ami-036d0684fc96830ca"
+  instance_type               = local.instance_type
+  vpc_security_group_ids      = [aws_security_group.this-sg.id]
+  spot_type                   = "one-time"
   associate_public_ip_address = true
 
   tags = {
