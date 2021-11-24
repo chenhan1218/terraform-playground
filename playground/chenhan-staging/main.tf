@@ -29,8 +29,25 @@ module "aws" {
   source = "../modules/aws"
 }
 
+
+data "aws_ami" "latest-ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
 resource "aws_spot_instance_request" "cheap_worker" {
-  ami                         = "ami-036d0684fc96830ca"
+  ami                         = data.aws_ami.latest-ubuntu.id
+  wait_for_fulfillment        = true
   instance_type               = local.instance_type
   vpc_security_group_ids      = [aws_security_group.this-sg.id]
   spot_type                   = "one-time"
