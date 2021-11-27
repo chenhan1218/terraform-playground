@@ -16,7 +16,7 @@ locals {
   instance_count = 1
   instance_type  = "t3a.nano"
   name           = "chenhan-staging"
-  ids            = toset(["one", "two", "three"])
+  instance_names = toset(["one"])
 }
 
 provider "random" {}
@@ -27,6 +27,41 @@ module "aws" {
   source = "../modules/aws"
 }
 
+resource "random_id" "server" {
+  for_each    = local.instance_names
+  byte_length = 4
+}
+
+resource "aws_launch_template" "this" {
+  for_each = local.instance_names
+
+  name                   = "launch-template-${each.key}"
+  image_id               = data.aws_ami.latest-ubuntu.id
+  instance_type          = local.instance_type
+  key_name               = module.aws.key_pair.default.name
+  vpc_security_group_ids = [aws_security_group.dev.id]
+
+  instance_market_options {
+    market_type = "spot"
+    spot_options {
+      spot_instance_type = "one-time"
+    }
+  }
+  tag_specifications {
+    resource_type = "instance"
+
+    tags = {
+      name        = "instance-${each.key}"
+      Terraform   = "true"
+      Environment = "dev"
+    }
+  }
+  tags = {
+    name        = "launch-template-${each.key}"
+    Terraform   = "true"
+    Environment = "dev"
+  }
+}
 
 data "aws_ami" "latest-ubuntu" {
   most_recent = true
@@ -61,23 +96,12 @@ module "ec2_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 3.0"
 
-  for_each = local.ids
-
-  name                        = "instance-${each.key}"
-  associate_public_ip_address = true
-  create_spot_instance        = true
-  spot_wait_for_fulfillment   = true
-  spot_type                   = "one-time"
-  ami                         = data.aws_ami.latest-ubuntu.id
-  instance_type               = local.instance_type
-  key_name                    = module.aws.key_pair.default.name
-  monitoring                  = true
-  vpc_security_group_ids      = [aws_security_group.dev.id]
-
-  tags = {
-    Terraform   = "true"
-    Environment = "dev"
+  for_each = local.instance_names
+  launch_template = {
+    name = "launch-template-${each.key}"
   }
+  depends_on = [aws_launch_template.this]
+  associate_public_ip_address = true
 }
 
 # resource "aws_instance" "this" {
