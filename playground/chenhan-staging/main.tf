@@ -40,6 +40,15 @@ resource "aws_launch_template" "this" {
   instance_type          = local.instance_type
   key_name               = module.aws.key_pair.default.name
   vpc_security_group_ids = [aws_security_group.dev.id]
+  block_device_mappings {
+    device_name = "/dev/sda2"
+
+    ebs {
+      delete_on_termination = true
+      volume_size           = 20
+      volume_type           = "gp3"
+    }
+  }
 
   instance_market_options {
     market_type = "spot"
