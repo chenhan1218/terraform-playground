@@ -1,9 +1,9 @@
 output "domain-name" {
-  # value = aws_instance.this.public_dns
-  value = aws_spot_instance_request.cheap_worker.public_dns
+  value = {
+    for k, v in module.ec2_instance : k => v.public_dns
+  }
 }
 
-output "application-url" {
-  # value = "${aws_instance.this.public_dns}/index.php"
-  value = "${aws_spot_instance_request.cheap_worker.public_dns}/index.php"
+output "spot-domain-name" {
+  value = aws_spot_instance_request.cheap_worker.public_dns
 }
