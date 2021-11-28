@@ -1,6 +1,6 @@
 output "domain-name" {
   value = {
-    for k, v in module.ec2_instance : k => v.public_dns
+    for k, v in module.ec2 : k => v.public_dns
   }
 }
 

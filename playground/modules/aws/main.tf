@@ -1,7 +1,7 @@
 output "key_pair" {
-    value = {
-        default = {
-            name = "chenhan"
-        }
+  value = {
+    default = {
+      name = "chenhan"
     }
+  }
 }

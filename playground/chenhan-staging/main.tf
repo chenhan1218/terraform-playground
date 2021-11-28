@@ -12,67 +12,15 @@ provider "aws" {
   region  = "ap-northeast-1"
 }
 
+
 locals {
   instance_count = 1
   instance_type  = "t3a.nano"
   name           = "chenhan-staging"
-  instance_names = toset(["one"])
+  instances      = toset(["one"])
 }
 
-provider "random" {}
-
-resource "random_pet" "name" {}
-
-module "aws" {
-  source = "../modules/aws"
-}
-
-resource "random_id" "server" {
-  for_each    = local.instance_names
-  byte_length = 4
-}
-
-resource "aws_launch_template" "this" {
-  for_each = local.instance_names
-
-  name                   = "launch-template-${each.key}"
-  image_id               = data.aws_ami.latest-ubuntu.id
-  instance_type          = local.instance_type
-  key_name               = module.aws.key_pair.default.name
-  vpc_security_group_ids = [aws_security_group.dev.id]
-  block_device_mappings {
-    device_name = "/dev/sda2"
-
-    ebs {
-      delete_on_termination = true
-      volume_size           = 20
-      volume_type           = "gp3"
-    }
-  }
-
-  instance_market_options {
-    market_type = "spot"
-    spot_options {
-      spot_instance_type = "one-time"
-    }
-  }
-  tag_specifications {
-    resource_type = "instance"
-
-    tags = {
-      name        = "instance-${each.key}"
-      Terraform   = "true"
-      Environment = "dev"
-    }
-  }
-  tags = {
-    name        = "launch-template-${each.key}"
-    Terraform   = "true"
-    Environment = "dev"
-  }
-}
-
-data "aws_ami" "latest-ubuntu" {
+data "aws_ami" "latest_ubuntu" {
   most_recent = true
   owners      = ["099720109477"] # Canonical
 
@@ -87,11 +35,41 @@ data "aws_ami" "latest-ubuntu" {
   }
 }
 
+provider "random" {}
+
+resource "random_pet" "name" {}
+
+module "ec2" {
+  source = "../modules/aws/ec2"
+
+  image_id = data.aws_ami.latest_ubuntu.id
+  for_each = local.instances
+  name     = each.key
+}
+
+module "aws" {
+  source = "../modules/aws"
+}
+
+module "aws_security_group" {
+  source = "../modules/aws/vpc/security_group"
+}
+
+resource "random_id" "server" {
+  # TODO
+  # keeper
+  for_each    = local.instances
+  byte_length = 4
+}
+
+
 resource "aws_spot_instance_request" "cheap_worker" {
-  ami                         = data.aws_ami.latest-ubuntu.id
-  wait_for_fulfillment        = true
-  instance_type               = local.instance_type
-  vpc_security_group_ids      = [aws_security_group.dev.id]
+  # ami                         = local.ami_id
+  ami                    = data.aws_ami.latest_ubuntu.id
+  wait_for_fulfillment   = true
+  instance_type          = local.instance_type
+  vpc_security_group_ids = [module.aws_security_group.id]
+  # [module.aws_security_group.dev.id]
   spot_type                   = "one-time"
   associate_public_ip_address = true
 
@@ -101,17 +79,6 @@ resource "aws_spot_instance_request" "cheap_worker" {
   key_name = module.aws.key_pair.default.name
 }
 
-module "ec2_instance" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 3.0"
-
-  for_each = local.instance_names
-  launch_template = {
-    name = "launch-template-${each.key}"
-  }
-  depends_on = [aws_launch_template.this]
-  associate_public_ip_address = true
-}
 
 # resource "aws_instance" "this" {
 #   ami                    = "ami-036d0684fc96830ca"
@@ -123,27 +90,3 @@ module "ec2_instance" {
 #   key_name = module.aws.key_pair.default.name
 # }
 
-resource "aws_security_group" "dev" {
-  name = "${local.name}-sg-dev"
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  lifecycle {
-    create_before_destroy = true
-  }
-}
