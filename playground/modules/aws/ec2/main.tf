@@ -1,17 +1,13 @@
-module "security_group" {
-  source = "../vpc/security_group"
-}
-
 module "aws" {
   source = "../"
 }
 
 resource "aws_launch_template" "this" {
-  name                   = var.name
-  image_id               = var.image_id
-  instance_type          = var.instance_type
-  key_name               = module.aws.key_pair.default.name
-  vpc_security_group_ids = [module.security_group.id]
+  name          = var.name
+  image_id      = var.image_id
+  instance_type = var.instance_type
+  key_name      = module.aws.key_pair.default.name
+  # vpc_security_group_ids = var.security_group_ids
   block_device_mappings {
     device_name = "/dev/sda2"
 
@@ -53,7 +49,6 @@ module "ec2_instance" {
     name = aws_launch_template.this.name
   }
   depends_on = [aws_launch_template.this]
-  # TODO
-  # subnet_id
+  # subnet_id                   = var.subnet_id
   associate_public_ip_address = true
 }

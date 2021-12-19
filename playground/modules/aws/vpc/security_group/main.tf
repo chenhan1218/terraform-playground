@@ -1,7 +1,7 @@
 resource "aws_security_group" "dev" {
   name = var.dev_name
   # TODO:
-  # vpc_id = 
+  vpc_id = var.vpc_id
   ingress {
     from_port   = 80
     to_port     = 80
